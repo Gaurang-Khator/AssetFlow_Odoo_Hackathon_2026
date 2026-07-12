@@ -1,46 +1,40 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import Optional
+
 from pydantic import BaseModel
 
 
 class AllocationCreate(BaseModel):
-    asset_id: int
-    employee_id: Optional[int] = None
-    department_id: Optional[int] = None
-    expected_return_date: Optional[date] = None
+    asset_id: str
+    employee_id: Optional[str] = None
+    department_id: Optional[str] = None
+    expected_return_date: Optional[datetime] = None
+
+
+class AllocationReturn(BaseModel):
+    condition_note: str
 
 
 class AllocationOut(BaseModel):
-    id: int
-    asset_id: int
-    employee_id: Optional[int]
-    department_id: Optional[int]
-    allocated_date: date
-    expected_return_date: Optional[date]
-    returned_date: Optional[date]
-    status: str
+    id: str
+    asset_id: str
+    employee_id: Optional[str] = None
+    department_id: Optional[str] = None
+    allocated_at: datetime
+    expected_return_date: Optional[datetime] = None
+    returned_at: Optional[datetime] = None
+    is_active: bool
 
     class Config:
         from_attributes = True
 
 
-class ReturnAssetRequest(BaseModel):
-    condition_check_in_notes: Optional[str] = None
+class HolderInfo(BaseModel):
+    id: str
+    name: str
 
 
-class TransferRequestCreate(BaseModel):
-    asset_id: int
-    to_holder_id: int
-
-
-class TransferRequestOut(BaseModel):
-    id: int
-    asset_id: int
-    from_holder_id: Optional[int]
-    to_holder_id: int
-    requested_by: int
-    approved_by: Optional[int]
-    status: str
-
-    class Config:
-        from_attributes = True
+class AllocationConflict(BaseModel):
+    error: str = "held_by"
+    holder: Optional[HolderInfo] = None
+    allow_transfer_request: bool = True
