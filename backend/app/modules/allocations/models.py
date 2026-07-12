@@ -1,47 +1,43 @@
 import enum
-from datetime import datetime, date
-from sqlalchemy import Column, Integer, Text, Date, DateTime, ForeignKey, Enum, CheckConstraint
+import uuid
+from sqlalchemy import Column, ForeignKey, DateTime, Text, Boolean, Enum
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
+
 from app.core.database import Base
 
 
-class AllocationStatus(str, enum.Enum):
-    active = "active"
-    returned = "returned"
+def gen_uuid():
+    return str(uuid.uuid4())
 
 
 class TransferStatus(str, enum.Enum):
-    requested = "requested"
-    approved = "approved"
-    rejected = "rejected"
-    completed = "completed"
+    REQUESTED = "REQUESTED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 
 class Allocation(Base):
     __tablename__ = "allocations"
-    id = Column(Integer, primary_key=True)
-    asset_id = Column(Integer, ForeignKey("assets.id"), nullable=False)
-    employee_id = Column(Integer, ForeignKey("users.id"))
-    department_id = Column(Integer, ForeignKey("departments.id"))
-    allocated_date = Column(Date, default=date.today, nullable=False)
-    expected_return_date = Column(Date)
-    returned_date = Column(Date)
-    condition_check_in_notes = Column(Text)
-    status = Column(Enum(AllocationStatus, name="allocation_status"), default=AllocationStatus.active, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
-    __table_args__ = (
-        CheckConstraint("employee_id IS NOT NULL OR department_id IS NOT NULL", name="ck_allocation_target"),
-    )
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    asset_id = Column(UUID(as_uuid=False), ForeignKey("assets.id"), nullable=False)
+    employee_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)
+    allocated_at = Column(DateTime, server_default=func.now())
+    expected_return_date = Column(DateTime, nullable=True)
+    returned_at = Column(DateTime, nullable=True)
+    condition_note = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
 
 
 class TransferRequest(Base):
     __tablename__ = "transfer_requests"
-    id = Column(Integer, primary_key=True)
-    asset_id = Column(Integer, ForeignKey("assets.id"), nullable=False)
-    from_holder_id = Column(Integer, ForeignKey("users.id"))
-    to_holder_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    requested_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-    approved_by = Column(Integer, ForeignKey("users.id"))
-    status = Column(Enum(TransferStatus, name="transfer_status"), default=TransferStatus.requested, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
-    resolved_at = Column(DateTime(timezone=True))
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    asset_id = Column(UUID(as_uuid=False), ForeignKey("assets.id"), nullable=False)
+    from_employee_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    to_employee_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    status = Column(Enum(TransferStatus), default=TransferStatus.REQUESTED, nullable=False)
+    requested_at = Column(DateTime, server_default=func.now())
+    resolved_at = Column(DateTime, nullable=True)
